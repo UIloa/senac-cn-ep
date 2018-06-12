@@ -1,0 +1,336 @@
+!gfortran, gcc version 5.4.0 20160609
+
+program hello
+
+    interface
+       function matrix_mult_by_scalar(A, m, n)
+              INTEGER :: n
+              REAL, dimension(n,n) :: A
+              REAL :: m
+              REAL, dimension(n,n) :: matrix_mult_by_scalar
+       end function matrix_mult_by_scalar
+       
+       function vector_mult_by_scalar(s, m, n)
+           INTEGER :: n
+           REAL, dimension(n, 1) :: s
+           REAL :: m
+           REAL, dimension(n, 1) :: vector_mult_by_scalar
+       end function vector_mult_by_scalar
+       
+       function vector_add(Y, Z, n)
+              INTEGER :: n
+              REAL, dimension(n,1) :: Y
+              REAL, dimension(n,1) :: Z
+              REAL, dimension(n,1) :: vector_add
+       end function vector_add
+       
+       function vector_sub(Y, Z, n)
+              INTEGER :: n
+              REAL, dimension(n,1) :: Y
+              REAL, dimension(n,1) :: Z
+              REAL, dimension(n,1) :: vector_sub
+       end function vector_sub
+       
+       function vector_module(A, n) result(r)
+           INTEGER :: n
+           REAL, dimension(n,1) :: A
+           REAL :: r
+       end function vector_module
+       
+       function getA() result (A)
+           REAL, dimension(8,8) :: A
+       end function getA
+       
+       function getS() result (r)
+           REAL, dimension(8,1) :: r
+       end function getS
+     
+       function calcNextAprox(A, m, s, x_ant, n) result (R)
+           INTEGER :: n
+           REAL, dimension(n,n) :: A
+           REAL :: m
+           REAL, dimension(n,1) ::s
+           REAL, dimension(n,1) :: x_ant
+           REAL, dimension(n,1) :: R
+       end function calcNextAprox
+       
+       function normalize_vector(a, n) result (R)
+           INTEGER :: n
+           REAL, dimension(n,n):: a
+           REAL, dimension(n,n):: R
+      end function normalize_vector
+
+       subroutine print_matrix(A, n)
+           INTEGER :: n
+           REAL, dimension(n,n) :: A
+       end subroutine print_matrix
+       
+       subroutine print_vector(A, n)
+           INTEGER :: n
+           REAL, dimension(n,1) :: A
+       end subroutine print_vector
+    end interface
+    
+    REAL, dimension(8,8) :: A
+    REAL, dimension(8,1) :: s
+    REAL, dimension(8,1) :: x_ant
+    REAL, dimension(8,1) :: next_resp
+    REAL :: m
+    REAL :: threshold
+    REAL :: error
+    REAL :: module
+    INTEGER :: n
+    
+    n = 8
+    A = getA()
+    s = getS()
+    x_ant = getS()
+    m = 0.15
+    threshold = 0.001
+    error = 1000
+    
+    DO WHILE (error .GT. threshold)
+        next_resp = calcNextAprox(A, m, s, x_ant, n)
+        error = vector_module(vector_sub(next_resp, x_ant, 8), 8)
+        x_ant = next_resp
+    END DO
+    
+    next_resp = normalize_vector(next_resp, n)
+    
+    call print_vector(next_resp, 8)
+    
+    module = vector_module(next_resp, n)
+    
+    print *, module
+end program hello
+
+   function matrix_mult_by_scalar(A, m, n) result(X)
+    ! add 2D arrays of type matrix
+      INTEGER :: n
+      REAL, dimension(n,n) :: A
+      REAL :: m
+      REAL, dimension(n,n) :: X
+  
+      do i=1,n
+          do j=1,n
+              X(i,j) = A(i,j) * m
+          enddo
+      enddo
+    end function matrix_mult_by_scalar
+    
+    function vector_mult_by_scalar(s, m, n) result(X)
+        INTEGER :: n
+        REAL, dimension(n, 1) :: s
+        REAL :: m
+        REAL, dimension(n, 1) :: X
+        
+        do i = 1,n
+            X(i,1) = s(i,1) * m
+        enddo
+    end function vector_mult_by_scalar
+    
+    function vector_add(Y, Z, n) result(X)
+    ! add 2D arrays of type matrix
+      INTEGER :: n
+      REAL, dimension(n,1) :: Y
+      REAL, dimension(n,1) :: Z
+      REAL, dimension(n,1) :: X
+      
+      do i=1,n
+        X(i,1) = Y(i,1)+Z(i,1)
+      enddo
+    end function vector_add
+    
+    function vector_sub(Y, Z, n) result(X)
+    ! add 2D arrays of type matrix
+      INTEGER :: n
+      REAL, dimension(n,1) :: Y
+      REAL, dimension(n,1) :: Z
+      REAL, dimension(n,1) :: X
+      
+      do i=1,n
+        X(i,1) = Y(i,1)-Z(i,1)
+      enddo
+    end function vector_sub
+    
+    !Esta funcao deve receber uma matriz (n x 1), que retornar seu modulo.
+    function vector_module(A, n) result(r)
+       INTEGER :: n       
+       REAL, dimension(n,1) :: A
+       REAL :: module
+       REAL :: r
+
+       module = 0.0
+       do i = 1, n
+          module = module + A(i,1)*A(i,1)
+       enddo
+  
+       r = sqrt(module)
+    end function vector_module
+    
+    function normalize_vector(A, n) result (r)
+       interface
+         function vector_module(A, n)
+              INTEGER :: n
+              REAL, dimension(n,1) :: A
+              REAL, dimension(n,1) :: r
+         end function vector_module
+       end interface
+       
+       INTEGER :: n
+       REAL, dimension(n, 1) :: A
+       REAL, dimension(n, 1) :: R
+       
+       REAL :: module
+       module = vector_module(A, n)
+       do i=1, n
+           R(i, 1) = A(i,1) / module
+       enddo
+    end function
+    
+    
+    function getA() result (A)
+        REAL, dimension(8,8) :: A
+        A(1,1) = 0
+        A(1,2) = 0
+        A(1,3) = 0
+        A(1,4) = 0
+        A(1,5) = 0
+        A(1,6) = 0
+        A(1,7) = 0
+        A(1,8) = 1
+        
+        A(2,1) = 0.5
+        A(2,2) = 0
+        A(2,3) = 0
+        A(2,4) = 0
+        A(2,5) = 0
+        A(2,6) = 0
+        A(2,7) = 0
+        A(2,8) = 0
+        
+        A(3,1) = 0.5
+        A(3,2) = 0.5
+        A(3,3) = 0
+        A(3,4) = 0
+        A(3,5) = 0
+        A(3,6) = 0
+        A(3,7) = 0
+        A(3,8) = 0.5
+        
+        A(4,1) = 0
+        A(4,2) = 0.5
+        A(4,3) = 0
+        A(4,4) = 0
+        A(4,5) = 0
+        A(4,6) = 0
+        A(4,7) = 0
+        A(4,8) = 0
+        
+        A(5,1) = 0
+        A(5,2) = 0
+        A(5,3) = 0
+        A(5,4) = 0.5
+        A(5,5) = 0
+        A(5,6) = 0
+        A(5,7) = 0
+        A(5,8) = 0
+        
+        A(6,1) = 0
+        A(6,2) = 0
+        A(6,3) = 0.5
+        A(6,4) = 0.5
+        A(6,5) = 1
+        A(6,6) = 0
+        A(6,7) = 0
+        A(6,8) = 0
+        
+        A(7,1) = 0
+        A(7,2) = 0
+        A(7,3) = 0.5
+        A(7,4) = 0
+        A(7,5) = 0
+        A(7,6) = 1
+        A(7,7) = 0
+        A(7,8) = 0
+        
+        A(8,1) = 0
+        A(8,2) = 0
+        A(8,3) = 0
+        A(8,4) = 0
+        A(8,5) = 0
+        A(8,6) = 0
+        A(8,7) = 1
+        A(8,8) = 0
+    end function getA
+    
+    function getS() result (r)
+        REAL, dimension(8,1) :: r
+        
+        r(1,1) = 0.125
+        r(2,1) = 0.125
+        r(3,1) = 0.125
+        r(4,1) = 0.125
+        r(5,1) = 0.125
+        r(6,1) = 0.125
+        r(7,1) = 0.125
+        r(8,1) = 0.125
+        
+    end function getS
+    
+    function calcNextAprox(A, m, s, x_ant, n) result (R)
+    
+       interface
+           function matrix_mult_by_scalar(A, m, n)
+              INTEGER :: n
+              REAL, dimension(n,n) :: A
+              REAL :: m
+              REAL, dimension(n,n) :: matrix_mult_by_scalar
+           end function matrix_mult_by_scalar
+       
+         function vector_mult_by_scalar(s, m, n)
+           INTEGER :: n
+           REAL, dimension(n, 1) :: s
+           REAL :: m
+           REAL, dimension(n, 1) :: vector_mult_by_scalar
+         end function vector_mult_by_scalar
+         
+         function vector_add(Y, Z, n)
+              INTEGER :: n
+              REAL, dimension(n,1) :: Y
+              REAL, dimension(n,1) :: Z
+              REAL, dimension(n,1) :: vector_add
+         end function vector_add
+       
+       end interface
+  
+        INTEGER :: n
+        REAL, dimension(n,n) :: A
+        REAL :: m
+        REAL, dimension(n,1) ::s
+        REAL, dimension(n,1) :: x_ant
+        REAL, dimension(n,1) :: R
+        
+        R = vector_add(matmul(matrix_mult_by_scalar(A, 1-m, n), x_ant), vector_mult_by_scalar(s, m, n), n)
+    end function calcNextAprox
+    
+    subroutine print_matrix(A, n)
+      INTEGER :: n
+      REAL, dimension(n,n) :: A
+      
+      do i=1,n
+        do j=1,n
+          print*, A(i,j)
+        enddo
+      enddo
+    end subroutine print_matrix
+    
+    subroutine print_vector(A, n)
+      INTEGER :: n
+      REAL, dimension(n,1) :: A
+      
+      do i=1,n
+        print*, A(i,1)
+      enddo
+    end subroutine print_vector
+    
